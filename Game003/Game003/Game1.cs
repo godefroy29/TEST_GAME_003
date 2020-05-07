@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Game003
 {
@@ -11,6 +12,17 @@ namespace Game003
     /// </summary>
     public class Game1 : Game
     {
+
+        enum GameState
+        {
+            StartMenu,
+            Loading,
+            Playing,
+            PauseMenu
+        }
+
+        public const int BLOCK = 16;
+
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
@@ -19,28 +31,28 @@ namespace Game003
 
         private Player player;
 
-
-        public int WINDOW_WIDTH = 160;
-        public int WINDOW_HEIGHT = 224;
-
-        public const int BLOCK = 16;
-
-        public const int START_X = 64;
-        public const int START_Y = 208;
+        Area arena1;
 
         Matrix scale;
-        int sizeExtend = 2;
+        int sizeExtend = 1;
 
-        List<Rectangle> listBlockedBlock;
+        KeyboardState oldState;
+
+        private Texture2D startButton, resumeButton, exitButton;
+        private Vector2 startButtonPosition, resumeButtonPosition, exitButtonPosition;
+        private Rectangle startButtonRect, resumeButtonRect, exitButtonRect;
+        private Thread backgroundThread;
+        private bool isLoading = false;
+        MouseState mouseState, previousMouseState;
+        GameState currentGameState;
+
+        Texture2D menuBackground;
 
 
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-
-            graphics.PreferredBackBufferWidth = WINDOW_WIDTH * sizeExtend;
-            graphics.PreferredBackBufferHeight = WINDOW_HEIGHT * sizeExtend;
         }
 
         /// <summary>
@@ -52,88 +64,14 @@ namespace Game003
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            rectWindows = new Rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-            listBlockedBlock = GetBlockedBlock();
-            player = new Player(Content.Load<Texture2D>("RedPlayer"),1,8, new Vector2(START_X, START_Y), WINDOW_HEIGHT, WINDOW_WIDTH, listBlockedBlock);
             scale = Matrix.CreateScale(sizeExtend);
-            
+            IsMouseVisible = true;
+            currentGameState = GameState.StartMenu;
+            oldState = Keyboard.GetState();
 
             base.Initialize();
         }
 
-        private List<Rectangle> GetBlockedBlock()
-        {
-            List<Rectangle> res = new List<Rectangle>();
-            res.Add(CreateBlockedBlock(0, 0));
-            res.Add(CreateBlockedBlock(0, 1));
-            res.Add(CreateBlockedBlock(0, 2));
-            res.Add(CreateBlockedBlock(0, 3));
-            res.Add(CreateBlockedBlock(0, 4));
-            res.Add(CreateBlockedBlock(0, 5));
-            res.Add(CreateBlockedBlock(0, 6));
-            res.Add(CreateBlockedBlock(0, 7));
-            res.Add(CreateBlockedBlock(0, 8));
-            res.Add(CreateBlockedBlock(0, 9));
-
-            res.Add(CreateBlockedBlock(1, 0));
-            res.Add(CreateBlockedBlock(1, 3));
-            res.Add(CreateBlockedBlock(1, 9));
-
-            res.Add(CreateBlockedBlock(2, 0));
-            res.Add(CreateBlockedBlock(2, 3));
-            res.Add(CreateBlockedBlock(2, 5));
-            res.Add(CreateBlockedBlock(2, 7));
-            res.Add(CreateBlockedBlock(2, 9));
-
-            res.Add(CreateBlockedBlock(3, 0));
-            res.Add(CreateBlockedBlock(3, 3));
-            res.Add(CreateBlockedBlock(3, 9));
-            res.Add(CreateBlockedBlock(3, 10));
-
-            res.Add(CreateBlockedBlock(4, 0));
-
-            res.Add(CreateBlockedBlock(5, 0));
-            res.Add(CreateBlockedBlock(5, 5));
-            res.Add(CreateBlockedBlock(5, 7));
-            
-            res.Add(CreateBlockedBlock(6, 0));
-            res.Add(CreateBlockedBlock(6, 3));
-            res.Add(CreateBlockedBlock(6, 5));
-            res.Add(CreateBlockedBlock(6, 7));
-            res.Add(CreateBlockedBlock(6, 9));
-            res.Add(CreateBlockedBlock(6, 10));
-            
-            res.Add(CreateBlockedBlock(7, 0));
-            res.Add(CreateBlockedBlock(7, 3));
-            res.Add(CreateBlockedBlock(7, 5));
-            res.Add(CreateBlockedBlock(7, 7));
-            res.Add(CreateBlockedBlock(7, 9));
-
-            res.Add(CreateBlockedBlock(8, 0));
-            res.Add(CreateBlockedBlock(8, 3));
-            res.Add(CreateBlockedBlock(8, 9));
-
-            res.Add(CreateBlockedBlock(9, 0));
-            res.Add(CreateBlockedBlock(9, 1));
-            res.Add(CreateBlockedBlock(9, 2));
-            res.Add(CreateBlockedBlock(9, 3));
-            res.Add(CreateBlockedBlock(9, 4));
-            res.Add(CreateBlockedBlock(9, 5));
-            res.Add(CreateBlockedBlock(9, 6));
-            res.Add(CreateBlockedBlock(9, 7));
-            res.Add(CreateBlockedBlock(9, 8));
-            res.Add(CreateBlockedBlock(9, 9));
-
-
-
-
-            return res;
-        }
-
-        private Rectangle CreateBlockedBlock(int v1, int v2)
-        {
-            return new Rectangle(v1 * BLOCK, v2 * BLOCK, BLOCK, BLOCK);
-        }
 
         /// <summary>
         /// LoadContent will be called once per game and is the place to load
@@ -141,12 +79,39 @@ namespace Game003
         /// </summary>
         protected override void LoadContent()
         {
+
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
-            background = Content.Load<Texture2D>("Arene1");
+
+
+            menuBackground = Content.Load<Texture2D>("PeterCity");
+
+            startButton = Content.Load<Texture2D>("Start");
+            startButtonPosition = new Vector2((menuBackground.Width / 2) - (startButton.Width / 2), (menuBackground.Height / 2) - startButton.Height - 25);
+            startButtonRect = new Rectangle((int)startButtonPosition.X, (int)startButtonPosition.Y, startButton.Width, startButton.Height);
+
+            resumeButton = Content.Load<Texture2D>("Start");
+            resumeButtonPosition = new Vector2((menuBackground.Width / 2) - (resumeButton.Width / 2), (menuBackground.Height / 2) - resumeButton.Height - 25);
+            resumeButtonRect = new Rectangle((int)resumeButtonPosition.X, (int)resumeButtonPosition.Y, resumeButton.Width, resumeButton.Height);
+
+            exitButton = Content.Load<Texture2D>("Exit");
+            exitButtonPosition = new Vector2((menuBackground.Width / 2) - (exitButton.Width / 2), (menuBackground.Height / 2) - exitButton.Height + 25);
+            exitButtonRect = new Rectangle((int)exitButtonPosition.X, (int)exitButtonPosition.Y, exitButton.Width, exitButton.Height);
+
+
+            arena1 = new Area(Content, "PeterCity", 16);
+            graphics.PreferredBackBufferWidth = arena1.width * sizeExtend;
+            graphics.PreferredBackBufferHeight = arena1.height * sizeExtend;
+            graphics.ApplyChanges();
+            rectWindows = new Rectangle(0, 0, arena1.width, arena1.height);
+            player = new Player(Content.Load<Texture2D>("RedPlayer"), 1, 8, arena1);
+
+            currentGameState = GameState.StartMenu;
         }
+
+
 
         /// <summary>
         /// UnloadContent will be called once per game and is the place to unload
@@ -164,19 +129,89 @@ namespace Game003
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+            switch (currentGameState)
+            {
+                case GameState.StartMenu:
+                    IsMouseVisible = true;
+                    if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
+                        Exit();
+                    CheckMouseState();
+                    break;
 
-            // TODO: Add your update logic here
-            
-           
-            player.Update(Keyboard.GetState());
+                case GameState.PauseMenu:
+                    IsMouseVisible = true;
+                    if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
+                        Exit();
+                    CheckMouseState();
+                    break;
 
+                case GameState.Loading:
+                    break;
 
-            //player.Move("Up");
+                case GameState.Playing:
+                    IsMouseVisible = false;
+                    if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
+                        currentGameState = GameState.PauseMenu;
+                    player.Update(Keyboard.GetState(), gameTime);
+                    break;
+
+                default:
+                    break;
+            }
+
+            oldState = Keyboard.GetState();
 
             base.Update(gameTime);
         }
+
+        private void CheckMouseState()
+        {
+            if (IsMouseVisible & (currentGameState == GameState.StartMenu | currentGameState == GameState.PauseMenu))
+            {
+                mouseState = Mouse.GetState();
+                Rectangle mouseClickRect = new Rectangle(mouseState.X, mouseState.Y, 1, 1);
+
+                if (previousMouseState.LeftButton == ButtonState.Pressed && mouseState.LeftButton == ButtonState.Released)
+                {
+
+                    switch (currentGameState)
+                    {
+                        case GameState.StartMenu:
+                            if (mouseClickRect.Intersects(startButtonRect))
+                            {
+                                currentGameState = GameState.Playing;
+                                background = arena1.texture;
+                            }
+                            if (mouseClickRect.Intersects(exitButtonRect))
+                                Exit();
+                            break;
+
+                        case GameState.PauseMenu:
+                            if (mouseClickRect.Intersects(resumeButtonRect))
+                            {
+                                currentGameState = GameState.Playing;
+                                background = arena1.texture;
+                            }
+
+                            if (mouseClickRect.Intersects(exitButtonRect))
+                                Exit();
+                            break;
+
+                        case GameState.Loading:
+                            break;
+
+                        case GameState.Playing:
+                            break;
+
+
+                        default:
+                            break;
+                    }
+                }
+            }
+            previousMouseState = mouseState;
+        }
+
 
         /// <summary>
         /// This is called when the game should draw itself.
@@ -185,17 +220,41 @@ namespace Game003
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
+            spriteBatch.Begin(transformMatrix: scale);
 
-            // TODO: Add your drawing code here
-            spriteBatch.Begin(transformMatrix:scale);
-            spriteBatch.Draw(background, rectWindows, Color.White);
-            player.Draw(spriteBatch);
+            switch (currentGameState)
+            {
+                case GameState.StartMenu:
+                    spriteBatch.Draw(menuBackground, Vector2.Zero, Color.LightGray);
+                    spriteBatch.Draw(startButton, startButtonPosition, Color.White);
+                    spriteBatch.Draw(exitButton, exitButtonPosition, Color.White);
+                    break;
 
+                case GameState.PauseMenu:
+                    spriteBatch.Draw(menuBackground, Vector2.Zero, Color.LightGray);
+                    spriteBatch.Draw(resumeButton, resumeButtonPosition, Color.White);
+                    spriteBatch.Draw(exitButton, exitButtonPosition, Color.White);
+                    break;
+
+                case GameState.Loading:
+                    break;
+
+                case GameState.Playing:
+                    spriteBatch.Draw(background, rectWindows, Color.White);
+                    player.Draw(spriteBatch);
+                    break;
+
+                default:
+                    break;
+            }
 
 
             spriteBatch.End();
-
             base.Draw(gameTime);
         }
+
+
+
+
     }
 }

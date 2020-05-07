@@ -11,84 +11,96 @@ namespace Game003
 {
     class Player
     {
+        public enum Direction
+        {
+            NONE = -1,
+            DOWN = 0,
+            UP = 1,
+            LEFT = 2,
+            RIGHT = 3
+        }
+
         public Texture2D Texture { get; set; }
         public int Rows { get; set; }
         public int Columns { get; set; }
-        private int currentFrame;
+        private Direction currentDir;
         private int totalFrames;
-        //public const int player_spriteNumber = 8;
-        //public const int player_width = 24;
-        //public const int player_height = 32;
-        //public double speed;
-        //private int oldKey;
-
-        public const int DOWN = 0;
-        public const int UP = 1;
-        public const int LEFT = 2;
-        public const int RIGHT = 3;
+        private Area area;
+        public const int BLOCK = 16;
+        public float speed = 200;
         
-        private int speed = 20;
-        private int tickCount = 0;
+        Dictionary<Direction, Animation> listAnimation;
+        Animation currentAnimation;
 
-        private const int BLOCK = 16;
+
 
         Keys[] movingKeys;
         Keys[] interactKeys;
 
         bool interactionInProgress = false;
 
-        bool willMove = false;
-
-        bool flipWalk = false;
-        int flipWalkCount = 0;
-
-        int maxHeight;
-        int maxWidth;
-
         Vector2 currentLocation;
-
-        KeyboardState oldState;
         KeyboardState newState;
+        GameTime gameTime;
 
-        List<Rectangle> listBlockedBlock;
 
-        public Player(Texture2D texture, int rows, int columns, Vector2 location, int maxH, int maxW, List<Rectangle> listBlock)
+
+        #region "MAIN FUNCTION"
+
+
+        public Player(Texture2D texture, int rows, int columns, Area area)
         {
-            listBlockedBlock = listBlock;
+            movingKeys = new[] { Keys.Left, Keys.Right, Keys.Up, Keys.Down };
+            interactKeys = new[] { Keys.Space };
+
+            this.area = area;
+            currentLocation = new Vector2(area.sp.X, area.sp.Y);
             Texture = texture;
             Rows = rows;
             Columns = columns;
-            currentFrame = 0;
             totalFrames = Rows * Columns;
-            currentLocation = location;
-            maxHeight = maxH;
-            maxWidth = maxW;
 
-            movingKeys = new[] { Keys.Left, Keys.Right, Keys.Up, Keys.Down };
-            interactKeys = new[] { Keys.Space };
-        }
-
-        public void Update(KeyboardState kState)
-        {
-            newState = kState;
-            tickCount++;
-            if (tickCount >= speed)
+            currentDir = Direction.UP;
+            listAnimation = new Dictionary<Direction, Animation>
             {
-                Process();
-                tickCount = 0;
-            }
+                { Direction.UP, CreateWalkAnimation(Direction.UP) },
+                { Direction.DOWN, CreateWalkAnimation(Direction.DOWN) },
+                { Direction.LEFT, CreateWalkAnimation(Direction.LEFT) },
+                { Direction.RIGHT, CreateWalkAnimation(Direction.RIGHT) }
+            };
+            currentAnimation = listAnimation[Direction.UP];
+
         }
 
-        private void Process()
+        public void Update(KeyboardState kState, GameTime gameTime)
         {
+            this.gameTime = gameTime;
+            newState = kState;
 
             if (interactKeys.Any(x => newState.IsKeyDown(x)))
                 InteractWithObject();
 
-            if (movingKeys.Any(x => newState.IsKeyDown(x)))
+            if (movingKeys.Any(x => newState.IsKeyDown(x)) & !interactionInProgress)
                 MoveMe();
-            
         }
+
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            int width = Texture.Width / Columns;
+            int height = Texture.Height / Rows;
+            int row = (int)((float)(int)currentDir / (float)Columns);
+            int column = (int)currentDir % Columns;
+
+            Rectangle sourceFrame = currentAnimation.CurrentRectangle;
+            Rectangle destinationRectangle = new Rectangle((int)currentLocation.X, (int)currentLocation.Y, width, height);
+
+            spriteBatch.Draw(Texture, destinationRectangle, sourceFrame, Color.White); //, 0, Vector2.Zero, flipWalk ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0);
+        }
+
+
+        #endregion
+
+
 
         private void InteractWithObject()
         {
@@ -97,82 +109,88 @@ namespace Game003
 
         private void MoveMe()
         {
-            if (interactionInProgress)
-                return;
+            Direction newDir = GetDirFromKeyboard();
+            currentAnimation = newDir >= 0 ? listAnimation[newDir] : listAnimation[Direction.DOWN];
 
-            int newFrame = 0;
-
-            if (newState.IsKeyDown(Keys.Left))
-                newFrame = LEFT;
-            if (newState.IsKeyDown(Keys.Right))
-                newFrame = RIGHT;
-            if (newState.IsKeyDown(Keys.Up))
-                newFrame = UP;
-            if (newState.IsKeyDown(Keys.Down))
-                newFrame = DOWN;
-
-            if (currentFrame % 4 == newFrame)//direction précédente identique à la nouvelle direction
+            if (currentDir == newDir)//direction précédente identique à la nouvelle direction
             {
-                MoveLocation(newFrame);
+                MoveLocation(newDir);
+                currentAnimation.Update(gameTime);
             }
 
-            currentFrame = newFrame + (currentFrame >= 4 ? 0 : 4);
-            
-            
-
-            //flipWalk = currentFrame >= 4 & flipWalkCount >= 3;
-            //flipWalkCount += flipWalkCount >= 3 ? -flipWalkCount : 1;
-            //flipWalkCount++;
-
-            //currentFrame = newFrame + ((currentFrame == newFrame || currentFrame == newFrame + 4) ? currentFrame / 4 : 0);
+            currentDir = newDir;
 
         }
 
-        private void MoveLocation(int newFrame)
+        private Direction GetDirFromKeyboard()
+        {
+            Direction newDir = Direction.NONE;
+            if (newState.IsKeyDown(Keys.Left))
+                newDir = Direction.LEFT;
+            if (newState.IsKeyDown(Keys.Right))
+                newDir = Direction.RIGHT;
+            if (newState.IsKeyDown(Keys.Up))
+                newDir = Direction.UP;
+            if (newState.IsKeyDown(Keys.Down))
+                newDir = Direction.DOWN;
+            return newDir;
+        }
+
+        private void MoveLocation(Direction newFrame)
         {
             Vector2 newLocation = currentLocation;
             bool roadIsBlocked = false;
             switch (newFrame)
             {
-                case 0:
-                    newLocation.Y += currentLocation.Y >= maxHeight - BLOCK ? 0 : BLOCK;
+                case Direction.DOWN:
+                    newLocation.Y += currentLocation.Y >= area.texture.Height - BLOCK ? 0 : BLOCK;
                     break;
-                case 1:
+                case Direction.UP:
                     newLocation.Y -= currentLocation.Y <= 0 ? 0 : BLOCK;
                     break;
-                case 2:
+                case Direction.LEFT:
                     newLocation.X -= currentLocation.X <= 0 ? 0 : BLOCK;
                     break;
-                case 3:
-                    newLocation.X += currentLocation.X >= maxWidth - BLOCK ? 0 : BLOCK;
+                case Direction.RIGHT:
+                    newLocation.X += currentLocation.X >= area.texture.Width - BLOCK ? 0 : BLOCK;
                     break;
                 default:
                     break;
             }
-            foreach (Rectangle rect in listBlockedBlock)
+            foreach (Rectangle rect in area.z1)
             {
-                if(new Rectangle((int)newLocation.X,(int)newLocation.Y, BLOCK, BLOCK).Intersects(rect))
+                if (new Rectangle((int)newLocation.X, (int)newLocation.Y, BLOCK, BLOCK).Intersects(rect))
                     roadIsBlocked = true;
             }
+            Vector2 velocity = GetDesiredVelocityFromLocations(currentLocation, roadIsBlocked ? currentLocation : newLocation);
+            //currentLocation.X = velocity.X * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            //currentLocation.Y = velocity.Y * (float)gameTime.ElapsedGameTime.TotalSeconds;
             currentLocation = roadIsBlocked ? currentLocation : newLocation;
 
-        }
-        
 
-        public void Draw(SpriteBatch spriteBatch)
+        }
+
+
+
+        Vector2 GetDesiredVelocityFromLocations(Vector2 oldLoc, Vector2 newLoc)
         {
-            int width = Texture.Width / Columns;
-            int height = Texture.Height / Rows;
-            int row = (int)((float)(int)currentFrame / (float)Columns);
-            int column = (int)currentFrame % Columns;
-
-            Rectangle sourceFrame = new Rectangle(width * column, height * row, width, height);
-            Rectangle destinationRectangle = new Rectangle((int)currentLocation.X, (int)currentLocation.Y, width, height);
-
-            //spriteBatch.Draw(Texture, destinationRectangle, sourceFrame, Color.White, 0, Vector2.Zero, flipWalk ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0);
-            spriteBatch.Draw(Texture, destinationRectangle, sourceFrame, Color.White); //, 0, Vector2.Zero, flipWalk ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0);
+            Vector2 desiredVelocity = newLoc - oldLoc;
+            desiredVelocity.Normalize();
+            desiredVelocity *= speed;
+            return desiredVelocity;
         }
-        
+
+
+
+        private Animation CreateWalkAnimation(Direction dir)
+        {
+            Animation animation = new Animation();
+            animation.AddFrame(new Rectangle((int)dir * BLOCK, 0, BLOCK, BLOCK), TimeSpan.FromSeconds(.25));
+            animation.AddFrame(new Rectangle(((int)dir + 4) * BLOCK, 0, BLOCK, BLOCK), TimeSpan.FromSeconds(.50));
+            animation.AddFrame(new Rectangle((int)dir * BLOCK, 0, BLOCK, BLOCK), TimeSpan.FromSeconds(.25));
+            return animation;
+        }
+
 
     }
 }
