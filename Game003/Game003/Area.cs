@@ -20,11 +20,15 @@ namespace Game003
         public readonly Texture2D texture;
         public readonly int Width;
         public readonly int Height;
-        public readonly List<Rectangle> z0;
-        public readonly List<Rectangle> z1;
-        public readonly List<Rectangle> z2;
-        public readonly Point sp;
-        public readonly List<String> listLevel = new List<String>{"-1","0","1","2"};
+        public Dictionary<Rectangle, string> eventBlocks;
+        public List<Rectangle> z0;
+        public List<Rectangle> z1;
+        public List<Rectangle> z2;
+        public Point sp;
+        public readonly List<String> listLevel = new List<String> { "-1", "0", "1", "2" };
+
+
+        
 
 
         public Area(ContentManager content, string name, int blockSize)
@@ -38,18 +42,75 @@ namespace Game003
                 Width = texture.Width;
                 Height = texture.Height;
 
-                List<string> blocks = new List<string>();
-                string fullCsvName = "Content/" + name + ".csv";
+                FillLevels();
 
-                using (StreamReader sr = new StreamReader(fullCsvName))
+                FillEvents();
+
+            }
+            catch (Exception e)
+            {
+
+                throw e;
+            }
+
+
+        }
+
+        private void FillEvents()
+        {
+            try
+            {
+
+
+                List<string> eventList = new List<string>();
+                List<string> eventListSplit = new List<string>();
+                int v1, v2;
+                string eventCsvName = "Content/" + name + "_Events.csv";
+
+                using (StreamReader sr = new StreamReader(eventCsvName))
+                {
+                    while (sr.Peek() >= 0)
+                    {
+                        eventList.Add(sr.ReadLine());
+                    }
+                }
+
+                eventBlocks = new Dictionary<Rectangle, string>();
+                foreach (string ev in eventList)
+                {
+                    eventListSplit = ev.Split(';').ToList();
+                    if (eventListSplit.First() != "Name")
+                    {
+
+                        v1 = Int32.Parse(eventListSplit.ElementAt(1));
+                        v2 = Int32.Parse(eventListSplit.ElementAt(2));
+
+                        eventBlocks.Add(new Rectangle(v1 * blockSize, v2 * blockSize, blockSize, blockSize), eventListSplit.First());
+                    }
+
+                }
+            }
+            catch (Exception e)
+            {
+
+                throw;
+            }
+        }
+
+        private void FillLevels()
+        {
+            try
+            {
+                List<string> blocks = new List<string>();
+                string levelsCsvName = "Content/" + name + "_levels.csv";
+
+                using (StreamReader sr = new StreamReader(levelsCsvName))
                 {
                     while (sr.Peek() >= 0)
                     {
                         blocks.Add(sr.ReadLine());
                     }
                 }
-
-
                 z0 = new List<Rectangle>();
                 z1 = new List<Rectangle>();
                 z2 = new List<Rectangle>();
@@ -83,10 +144,8 @@ namespace Game003
             catch (Exception e)
             {
 
-                throw e;
+                throw;
             }
-
-
         }
     }
 }

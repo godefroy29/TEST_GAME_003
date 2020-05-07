@@ -32,6 +32,7 @@ namespace Game003
         private Player player;
 
         Area area;
+         const string firstAreaName = "PeterCity";
 
         Matrix scale;
         int sizeExtend = 1;
@@ -87,7 +88,6 @@ namespace Game003
 
 
             menuBackground = Content.Load<Texture2D>("PeterCity");
-
             startButton = Content.Load<Texture2D>("Start");
             startButtonPosition = new Vector2((menuBackground.Width / 2) - (startButton.Width / 2), (menuBackground.Height / 2) - startButton.Height - 25);
             startButtonRect = new Rectangle((int)startButtonPosition.X, (int)startButtonPosition.Y, startButton.Width, startButton.Height);
@@ -156,14 +156,21 @@ namespace Game003
 
                 case GameState.LoadingNextArea:
                     IsMouseVisible = false;
-                    currentGameState = GameState.Playing;
                     break;
 
                 case GameState.Playing:
                     IsMouseVisible = false;
-                    if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
-                        currentGameState = GameState.PauseMenu;
-                    player.Update(Keyboard.GetState(), gameTime);
+                    if (player.IsOnEventBlock)
+                    {
+                        GoToNextArea(area.eventBlocks[new Rectangle((int)player.currentLocation.X, (int)player.currentLocation.Y, BLOCK, BLOCK)]);
+                    }
+                    else
+                    {
+                        if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
+                            currentGameState = GameState.PauseMenu;
+                        player.Update(Keyboard.GetState(), gameTime);
+                    }
+                    
                     break;
 
                 default:
@@ -177,7 +184,9 @@ namespace Game003
 
         public void GoToNextArea(String name)
         {
+            currentGameState = GameState.LoadingNextArea;
             LoadArea(name);
+            currentGameState = GameState.Playing;
         }
 
 
@@ -197,8 +206,7 @@ namespace Game003
                             if (mouseClickRect.Intersects(startButtonRect))
                             {
                                 currentGameState = GameState.Playing;
-
-                                background = area.texture;
+                                LoadArea(firstAreaName);
                             }
                             if (mouseClickRect.Intersects(exitButtonRect))
                                 Exit();
@@ -208,9 +216,7 @@ namespace Game003
                             if (mouseClickRect.Intersects(resumeButtonRect))
                             {
                                 currentGameState = GameState.Playing;
-                                background = area.texture;
                             }
-
                             if (mouseClickRect.Intersects(exitButtonRect))
                                 Exit();
                             break;
@@ -255,11 +261,11 @@ namespace Game003
                     break;
 
                 case GameState.LoadingNextArea:
-                    spriteBatch.Draw(background, rectWindows, Color.Black);
+                    spriteBatch.Draw(area.texture, rectWindows, Color.Black);
                     break;
 
                 case GameState.Playing:
-                    spriteBatch.Draw(background, rectWindows, Color.White);
+                    spriteBatch.Draw(area.texture, rectWindows, Color.White);
                     player.Draw(spriteBatch);
                     break;
 

@@ -41,7 +41,7 @@ namespace Game003
 
         bool interactionInProgress = false;
 
-        Vector2 currentLocation;
+        public Vector2 currentLocation;
         KeyboardState newState;
         GameTime gameTime;
 
@@ -161,6 +161,8 @@ namespace Game003
                 default:
                     break;
             }
+
+            //TODO : Improve with area.Z1.Contains ?
             foreach (Rectangle rect in area.z1)
             {
                 if (new Rectangle((int)newLocation.X, (int)newLocation.Y, BLOCK, BLOCK).Intersects(rect))
@@ -168,6 +170,9 @@ namespace Game003
             }
 
             currentLocation = roadIsBlocked ? currentLocation : newLocation;
+
+            IsOnEventBlock = area.eventBlocks.Keys.Contains(new Rectangle((int)currentLocation.X, (int)currentLocation.Y, BLOCK, BLOCK));
+
 
         }
 
