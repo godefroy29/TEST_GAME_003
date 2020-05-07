@@ -23,12 +23,14 @@ namespace Game003
         public Texture2D Texture { get; set; }
         public int Rows { get; set; }
         public int Columns { get; set; }
+        public bool IsOnEventBlock { get; internal set; }
+
         private Direction currentDir;
         private int totalFrames;
         private Area area;
         public const int BLOCK = 16;
-        public float speed = 200;
-        
+        public float speed = 1;
+
         Dictionary<Direction, Animation> listAnimation;
         Animation currentAnimation;
 
@@ -59,7 +61,7 @@ namespace Game003
             Rows = rows;
             Columns = columns;
             totalFrames = Rows * Columns;
-
+            IsOnEventBlock = false;
             currentDir = Direction.UP;
             listAnimation = new Dictionary<Direction, Animation>
             {
@@ -95,6 +97,8 @@ namespace Game003
             Rectangle destinationRectangle = new Rectangle((int)currentLocation.X, (int)currentLocation.Y, width, height);
 
             spriteBatch.Draw(Texture, destinationRectangle, sourceFrame, Color.White); //, 0, Vector2.Zero, flipWalk ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0);
+
+
         }
 
 
@@ -162,16 +166,14 @@ namespace Game003
                 if (new Rectangle((int)newLocation.X, (int)newLocation.Y, BLOCK, BLOCK).Intersects(rect))
                     roadIsBlocked = true;
             }
-            Vector2 velocity = GetDesiredVelocityFromLocations(currentLocation, roadIsBlocked ? currentLocation : newLocation);
-            //currentLocation.X = velocity.X * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            //currentLocation.Y = velocity.Y * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            currentLocation = roadIsBlocked ? currentLocation : newLocation;
 
+            currentLocation = roadIsBlocked ? currentLocation : newLocation;
 
         }
 
 
 
+        //Not used for the moment...
         Vector2 GetDesiredVelocityFromLocations(Vector2 oldLoc, Vector2 newLoc)
         {
             Vector2 desiredVelocity = newLoc - oldLoc;

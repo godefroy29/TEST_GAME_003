@@ -16,7 +16,7 @@ namespace Game003
         enum GameState
         {
             StartMenu,
-            Loading,
+            LoadingNextArea,
             Playing,
             PauseMenu
         }
@@ -31,7 +31,7 @@ namespace Game003
 
         private Player player;
 
-        Area arena1;
+        Area area;
 
         Matrix scale;
         int sizeExtend = 1;
@@ -100,17 +100,26 @@ namespace Game003
             exitButtonPosition = new Vector2((menuBackground.Width / 2) - (exitButton.Width / 2), (menuBackground.Height / 2) - exitButton.Height + 25);
             exitButtonRect = new Rectangle((int)exitButtonPosition.X, (int)exitButtonPosition.Y, exitButton.Width, exitButton.Height);
 
-
-            arena1 = new Area(Content, "PeterCity", 16);
-            graphics.PreferredBackBufferWidth = arena1.width * sizeExtend;
-            graphics.PreferredBackBufferHeight = arena1.height * sizeExtend;
-            graphics.ApplyChanges();
-            rectWindows = new Rectangle(0, 0, arena1.width, arena1.height);
-            player = new Player(Content.Load<Texture2D>("RedPlayer"), 1, 8, arena1);
+            ActualiseGraphicSize(menuBackground);
 
             currentGameState = GameState.StartMenu;
         }
 
+        private void ActualiseGraphicSize(Texture2D t2d)
+        {
+            rectWindows = new Rectangle(0, 0, t2d.Width, t2d.Height);
+            graphics.PreferredBackBufferWidth = t2d.Width * sizeExtend;
+            graphics.PreferredBackBufferHeight = t2d.Height * sizeExtend;
+            graphics.ApplyChanges();
+        }
+
+        public void LoadArea(String name)
+        {
+            area = new Area(Content, name, 16);
+            rectWindows = new Rectangle(0, 0, area.Width, area.Height);
+            player = new Player(Content.Load<Texture2D>("RedPlayer"), 1, 8, area);
+            ActualiseGraphicSize(area.texture);
+        }
 
 
         /// <summary>
@@ -145,7 +154,9 @@ namespace Game003
                     CheckMouseState();
                     break;
 
-                case GameState.Loading:
+                case GameState.LoadingNextArea:
+                    IsMouseVisible = false;
+                    currentGameState = GameState.Playing;
                     break;
 
                 case GameState.Playing:
@@ -164,6 +175,12 @@ namespace Game003
             base.Update(gameTime);
         }
 
+        public void GoToNextArea(String name)
+        {
+            LoadArea(name);
+        }
+
+
         private void CheckMouseState()
         {
             if (IsMouseVisible & (currentGameState == GameState.StartMenu | currentGameState == GameState.PauseMenu))
@@ -180,7 +197,8 @@ namespace Game003
                             if (mouseClickRect.Intersects(startButtonRect))
                             {
                                 currentGameState = GameState.Playing;
-                                background = arena1.texture;
+
+                                background = area.texture;
                             }
                             if (mouseClickRect.Intersects(exitButtonRect))
                                 Exit();
@@ -190,14 +208,14 @@ namespace Game003
                             if (mouseClickRect.Intersects(resumeButtonRect))
                             {
                                 currentGameState = GameState.Playing;
-                                background = arena1.texture;
+                                background = area.texture;
                             }
 
                             if (mouseClickRect.Intersects(exitButtonRect))
                                 Exit();
                             break;
 
-                        case GameState.Loading:
+                        case GameState.LoadingNextArea:
                             break;
 
                         case GameState.Playing:
@@ -236,7 +254,8 @@ namespace Game003
                     spriteBatch.Draw(exitButton, exitButtonPosition, Color.White);
                     break;
 
-                case GameState.Loading:
+                case GameState.LoadingNextArea:
+                    spriteBatch.Draw(background, rectWindows, Color.Black);
                     break;
 
                 case GameState.Playing:

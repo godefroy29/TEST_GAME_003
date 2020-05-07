@@ -18,8 +18,8 @@ namespace Game003
         public readonly string name;
         public readonly int blockSize;
         public readonly Texture2D texture;
-        public readonly int width;
-        public readonly int height;
+        public readonly int Width;
+        public readonly int Height;
         public readonly List<Rectangle> z0;
         public readonly List<Rectangle> z1;
         public readonly List<Rectangle> z2;
@@ -35,8 +35,8 @@ namespace Game003
                 this.name = name;
                 this.blockSize = blockSize;
                 texture = content.Load<Texture2D>(name);
-                width = texture.Width;
-                height = texture.Height;
+                Width = texture.Width;
+                Height = texture.Height;
 
                 List<string> blocks = new List<string>();
                 string fullCsvName = "Content/" + name + ".csv";
