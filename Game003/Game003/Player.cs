@@ -11,14 +11,7 @@ namespace Game003
 {
     class Player
     {
-        public enum Direction
-        {
-            NONE = -1,
-            DOWN = 0,
-            UP = 1,
-            LEFT = 2,
-            RIGHT = 3
-        }
+
 
         public Texture2D Texture { get; set; }
         public int Rows { get; set; }
@@ -28,7 +21,6 @@ namespace Game003
         private Direction currentDir;
         private int totalFrames;
         private Area area;
-        public const int BLOCK = 16;
         public float speed = 1;
 
         Dictionary<Direction, Animation> listAnimation;
@@ -147,16 +139,16 @@ namespace Game003
             switch (newFrame)
             {
                 case Direction.DOWN:
-                    newLocation.Y += currentLocation.Y >= area.texture.Height - BLOCK ? 0 : BLOCK;
+                    newLocation.Y += currentLocation.Y >= area.texture.Height - GlobalVars.BLOCK ? 0 : GlobalVars.BLOCK;
                     break;
                 case Direction.UP:
-                    newLocation.Y -= currentLocation.Y <= 0 ? 0 : BLOCK;
+                    newLocation.Y -= currentLocation.Y <= 0 ? 0 : GlobalVars.BLOCK;
                     break;
                 case Direction.LEFT:
-                    newLocation.X -= currentLocation.X <= 0 ? 0 : BLOCK;
+                    newLocation.X -= currentLocation.X <= 0 ? 0 : GlobalVars.BLOCK;
                     break;
                 case Direction.RIGHT:
-                    newLocation.X += currentLocation.X >= area.texture.Width - BLOCK ? 0 : BLOCK;
+                    newLocation.X += currentLocation.X >= area.texture.Width - GlobalVars.BLOCK ? 0 : GlobalVars.BLOCK;
                     break;
                 default:
                     break;
@@ -165,13 +157,13 @@ namespace Game003
             //TODO : Improve with area.Z1.Contains ?
             foreach (Rectangle rect in area.z1)
             {
-                if (new Rectangle((int)newLocation.X, (int)newLocation.Y, BLOCK, BLOCK).Intersects(rect))
+                if (new Rectangle((int)newLocation.X, (int)newLocation.Y, GlobalVars.BLOCK, GlobalVars.BLOCK).Intersects(rect))
                     roadIsBlocked = true;
             }
 
             currentLocation = roadIsBlocked ? currentLocation : newLocation;
 
-            IsOnEventBlock = area.eventBlocks.Keys.Contains(new Rectangle((int)currentLocation.X, (int)currentLocation.Y, BLOCK, BLOCK));
+            IsOnEventBlock = area.eventBlocks.Keys.Contains(new Rectangle((int)currentLocation.X, (int)currentLocation.Y, GlobalVars.BLOCK, GlobalVars.BLOCK));
 
 
         }
@@ -192,9 +184,9 @@ namespace Game003
         private Animation CreateWalkAnimation(Direction dir)
         {
             Animation animation = new Animation();
-            animation.AddFrame(new Rectangle((int)dir * BLOCK, 0, BLOCK, BLOCK), TimeSpan.FromSeconds(.25));
-            animation.AddFrame(new Rectangle(((int)dir + 4) * BLOCK, 0, BLOCK, BLOCK), TimeSpan.FromSeconds(.50));
-            animation.AddFrame(new Rectangle((int)dir * BLOCK, 0, BLOCK, BLOCK), TimeSpan.FromSeconds(.25));
+            animation.AddFrame(new Rectangle((int)dir * GlobalVars.BLOCK, 0, GlobalVars.BLOCK, GlobalVars.BLOCK), TimeSpan.FromSeconds(.25));
+            animation.AddFrame(new Rectangle(((int)dir + 4) * GlobalVars.BLOCK, 0, GlobalVars.BLOCK, GlobalVars.BLOCK), TimeSpan.FromSeconds(.50));
+            animation.AddFrame(new Rectangle((int)dir * GlobalVars.BLOCK, 0, GlobalVars.BLOCK, GlobalVars.BLOCK), TimeSpan.FromSeconds(.25));
             return animation;
         }
 
