@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Xna.Framework;
 
-namespace Game003.GameObjects
+namespace Game003.Area
 {
    
 
@@ -19,7 +20,7 @@ namespace Game003.GameObjects
             this.blockSize = blockSize;
 
             List<String> splitLine;
-            foreach (string line in GlobalFuncs.ReadAllLines("Content/Maps/" + AreaName + "_events.csv"))
+            foreach (string line in GlobalFuncs.ReadAllLines("Content/" + AreaName + "_events.csv"))
             {
                 splitLine = line.Split(';').ToList();
                 if (int.TryParse(splitLine.ElementAt(2), out int x) & int.TryParse(splitLine.ElementAt(3), out int y))
@@ -27,36 +28,46 @@ namespace Game003.GameObjects
             }
         }
 
-        public List<AreaEvent> GetListAreaEvent(int x, int y)
+
+
+        public List<AreaEvent> GetAreaEvent(int x, int y)
         {
-            List<AreaEvent> list = new List<AreaEvent>();
-            foreach (AreaEvent a in eventsSource)
-            {
-                if (a.XVal == x & a.YVal == y)
-                    list.Add(a);
-            }
-            return list;
+            IEnumerable<AreaEvent> ie = from item in eventsSource where item.XVal == x & item.YVal == y select item;
+            if (ie.Count() > 0)
+                return ie.ToList();
+            return new List<AreaEvent>();
         }
 
-        public List<AreaEvent> GetListAreaEvent(AreaEvent_Type aet,int x, int y)
+        public List<AreaEvent> GetAreaEvent(AreaEvent_Type aet,int x, int y)
         {
-            List<AreaEvent> list = new List<AreaEvent>();
-            foreach (AreaEvent a in eventsSource)
-            {
-                if (a.XVal == x & a.YVal == y & a.AType == aet)
-                    list.Add(a);
-            }
-            return list;
+            IEnumerable<AreaEvent> ie = from item in eventsSource where item.AType == aet & item.XVal == x & item.YVal == y select item;
+            if (ie.Count() > 0)
+                return ie.ToList();
+            return new List<AreaEvent>();
+        }
+
+        public AreaEvent GetAreaEvent(string name)
+        {
+            IEnumerable<AreaEvent> ie = from item in eventsSource where item.Name == name select item;
+            if (ie.Count() > 0)
+                return ie.First();
+            return new AreaEvent();
+        }
+        
+        public AreaEvent GetAreaEvent(AreaEvent_Type aet, string name)
+        {
+            IEnumerable<AreaEvent> ie = from item in eventsSource where item.AType == aet & item.Name == name select item;
+            if (ie.Count() > 0)
+                return ie.First();
+            return new AreaEvent();
         }
 
         public AreaEvent GetAreaEvent(string name, int x, int y)
         {
-            foreach (AreaEvent a in eventsSource)
-            {
-                if (a.XVal == x & a.YVal == y & a.Name == name)
-                    return a;
-            }
-            return new AreaEvent(AreaEvent_Type.NONE,"",x,y);
+            IEnumerable<AreaEvent> ie = from item in eventsSource where item.Name == name & item.XVal == x & item.YVal == y select item;
+            if (ie.Count() > 0)
+                return ie.First();
+            return new AreaEvent();
         }
     }
 
@@ -68,6 +79,14 @@ namespace Game003.GameObjects
         public AreaEvent_Type AType;
         public string Name;
         public int XVal,YVal;
+
+        public AreaEvent()
+        {
+            AType = AreaEvent_Type.NONE;
+            Name = "";
+            XVal = -1;
+            YVal = -1;
+        }
 
         public AreaEvent(AreaEvent_Type aType, string name, int xVal, int yVal)
         {

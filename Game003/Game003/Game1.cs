@@ -12,27 +12,16 @@ namespace Game003
     /// </summary>
     public class Game1 : Game
     {
-
-        enum GameState
-        {
-            StartMenu,
-            LoadingNextArea,
-            Playing,
-            PauseMenu
-        }
-
-        public const int BLOCK = 16;
-
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
         private Texture2D background;
         private Rectangle rectWindows;
+        private string oldArenaName;
+        private Player.Player player;
 
-        private Player player;
-
-        Area area;
-         const string firstAreaName = "PeterCity";
+        Area.Area area;
+         const string firstAreaName = "Maps/PeterCity";
 
         Matrix scale;
         int sizeExtend = 1;
@@ -42,8 +31,8 @@ namespace Game003
         private Texture2D startButton, resumeButton, exitButton;
         private Vector2 startButtonPosition, resumeButtonPosition, exitButtonPosition;
         private Rectangle startButtonRect, resumeButtonRect, exitButtonRect;
-        private Thread backgroundThread;
-        private bool isLoading = false;
+        //private Thread backgroundThread;
+        //private bool isLoading = false;
         MouseState mouseState, previousMouseState;
         GameState currentGameState;
 
@@ -69,7 +58,7 @@ namespace Game003
             IsMouseVisible = true;
             currentGameState = GameState.StartMenu;
             oldState = Keyboard.GetState();
-
+            oldArenaName = "StartGame";
             base.Initialize();
         }
 
@@ -87,16 +76,16 @@ namespace Game003
             // TODO: use this.Content to load your game content here
 
 
-            menuBackground = Content.Load<Texture2D>("PeterCity");
-            startButton = Content.Load<Texture2D>("Start");
+            menuBackground = Content.Load<Texture2D>("Maps/PeterCity");
+            startButton = Content.Load<Texture2D>("Dialog/Start");
             startButtonPosition = new Vector2((menuBackground.Width / 2) - (startButton.Width / 2), (menuBackground.Height / 2) - startButton.Height - 25);
             startButtonRect = new Rectangle((int)startButtonPosition.X, (int)startButtonPosition.Y, startButton.Width, startButton.Height);
 
-            resumeButton = Content.Load<Texture2D>("Start");
+            resumeButton = Content.Load<Texture2D>("Dialog/Start");
             resumeButtonPosition = new Vector2((menuBackground.Width / 2) - (resumeButton.Width / 2), (menuBackground.Height / 2) - resumeButton.Height - 25);
             resumeButtonRect = new Rectangle((int)resumeButtonPosition.X, (int)resumeButtonPosition.Y, resumeButton.Width, resumeButton.Height);
 
-            exitButton = Content.Load<Texture2D>("Exit");
+            exitButton = Content.Load<Texture2D>("Dialog/Exit");
             exitButtonPosition = new Vector2((menuBackground.Width / 2) - (exitButton.Width / 2), (menuBackground.Height / 2) - exitButton.Height + 25);
             exitButtonRect = new Rectangle((int)exitButtonPosition.X, (int)exitButtonPosition.Y, exitButton.Width, exitButton.Height);
 
@@ -115,9 +104,10 @@ namespace Game003
 
         public void LoadArea(String name)
         {
-            area = new Area(Content, name, 16);
+            area = new Area.Area(Content, name, 16);
             rectWindows = new Rectangle(0, 0, area.Width, area.Height);
-            player = new Player(Content.Load<Texture2D>("RedPlayer"), 1, 8, area);
+            player = new Player.Player(Content.Load<Texture2D>("Player/RedPlayer"), 1, 8, area, oldArenaName);
+            oldArenaName = area.name.Replace("Maps/","");
             ActualiseGraphicSize(area.texture);
         }
 
@@ -141,12 +131,6 @@ namespace Game003
             switch (currentGameState)
             {
                 case GameState.StartMenu:
-                    IsMouseVisible = true;
-                    if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
-                        Exit();
-                    CheckMouseState();
-                    break;
-
                 case GameState.PauseMenu:
                     IsMouseVisible = true;
                     if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
@@ -160,20 +144,27 @@ namespace Game003
 
                 case GameState.Playing:
                     IsMouseVisible = false;
-                    if (player.IsOnEventBlock)
-                    {
-                        GoToNextArea(area.eventBlocks[new Rectangle((int)player.currentLocation.X, (int)player.currentLocation.Y, BLOCK, BLOCK)]);
-                    }
-                    else
-                    {
-                        if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
-                            currentGameState = GameState.PauseMenu;
-                        player.Update(Keyboard.GetState(), gameTime);
-                    }
-                    
-                    break;
+                    if (Keyboard.GetState().IsKeyUp(Keys.Escape) & oldState.IsKeyDown(Keys.Escape))
+                        currentGameState = GameState.PauseMenu;
+                    player.Update(Keyboard.GetState(), gameTime);
 
-                default:
+                    switch (player.eventToTrigger.AType)
+                    {
+                        case Area.AreaEvent_Type.ChangeStageNow:
+                        case Area.AreaEvent_Type.ChangeStageUp:
+                        case Area.AreaEvent_Type.ChangeStageDown:
+                        case Area.AreaEvent_Type.ChangeStageLeft:
+                        case Area.AreaEvent_Type.ChangeStageRight:
+                            GoToNextArea(player.eventToTrigger.Name);
+                            break;
+
+                        case Area.AreaEvent_Type.Interact:
+                            break;
+
+                        case Area.AreaEvent_Type.StartPoint:
+                        case Area.AreaEvent_Type.NONE:
+                            break;
+                    }
                     break;
             }
 
@@ -185,7 +176,7 @@ namespace Game003
         public void GoToNextArea(String name)
         {
             currentGameState = GameState.LoadingNextArea;
-            LoadArea(name);
+            LoadArea("Maps/" + name);
             currentGameState = GameState.Playing;
         }
 

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Game003.GameObjects
+namespace Game003.Area
 {
 
 
@@ -22,7 +22,7 @@ namespace Game003.GameObjects
             this.blockSize = blockSize;
 
             List<String> splitLine;
-            foreach (string line in GlobalFuncs.ReadAllLines("Content/Maps/" + AreaName + "_levels.csv"))
+            foreach (string line in GlobalFuncs.ReadAllLines("Content/" + AreaName + "_levels.csv"))
             {
                 splitLine = line.Split(';').ToList();
                 if (int.TryParse(splitLine.ElementAt(0), out int zpos) & int.TryParse(splitLine.ElementAt(1), out int x) & int.TryParse(splitLine.ElementAt(2), out int y))
@@ -30,35 +30,20 @@ namespace Game003.GameObjects
             }
         }
 
-        public AreaLevel_ZPos GetAreaLevel_ZPos(int x, int y)
+
+        public AreaLevel_ZPos GetAreaLevel_ZPos(AreaLevel_ZPos zp, int x, int y)
         {
-            AreaLevel area;
-            foreach (AreaLevel_ZPos zp in Enum.GetValues(typeof(AreaLevel_ZPos)).Cast<AreaLevel_ZPos>())
-            {
-                area = new AreaLevel(zp, x, y);
-                if (levelsSource.Contains(area))
-                    return zp;
-            }
+            if ((from item in levelsSource where item.ZPos == zp && item.XVal == x && item.YVal == y select item).Count() > 0)
+                return zp;
             return AreaLevel_ZPos.NONE;
         }
 
-        public AreaLevel GetAreaLevel(int x, int y)
-        {
-            AreaLevel area;
-            foreach (AreaLevel_ZPos zp in Enum.GetValues(typeof(AreaLevel_ZPos)).Cast<AreaLevel_ZPos>())
-            {
-                area = new AreaLevel(zp, x, y);
-                if (levelsSource.Contains(area))
-                    return area;
-            }
-            return new AreaLevel(AreaLevel_ZPos.NONE,x,y);
-        }
     }
 
     class AreaLevel
     {
         public AreaLevel_ZPos ZPos;
-        public int XVal,YVal;
+        public int XVal, YVal;
 
         public AreaLevel(AreaLevel_ZPos zpos, int xVal, int yVal)
         {

@@ -43,9 +43,14 @@
   <ItemGroup>
     <Compile Include="Animation.cs" />
     <Compile Include="AnimationFrame.cs" />
-    <Compile Include="Area.cs" />
+    <Compile Include="GameObjects\Area\Area.cs" />
+    <Compile Include="Funcs\Funcs.cs" />
     <Compile Include="Game1.cs" />
-    <Compile Include="Player.cs" />
+    <Compile Include="GameObjects\Area\Events.cs" />
+    <Compile Include="GameObjects\Area\Levels.cs" />
+    <Compile Include="GameObjects\Area\Vars.cs" />
+    <Compile Include="GameObjects\Player\Player.cs" />
+    <Compile Include="GameObjects\Player\PlayerState.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -57,30 +62,30 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Content\Arene1.png" />
-    <Content Include="Content\Exit.png" />
-    <Content Include="Content\PeterCity.png" />
-    <Content Include="Content\RedPlayer.png" />
-    <Content Include="Content\sacha-8-40x237.png" />
-    <Content Include="Content\Start.png" />
+    <Content Include="Content\Maps\Arene1.png" />
+    <Content Include="Content\Dialog\Exit.png" />
+    <Content Include="Content\Maps\PeterCity.png" />
+    <Content Include="Content\Player\RedPlayer.png" />
+    <Content Include="Content\Dialog\Start.png" />
     <Content Include="Icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <MonoGameContentReference Include="Content\Content.mgcb" />
     <None Include="app.manifest" />
-    <None Include="Content\Arene1_events.csv">
+    <None Include="Content\Maps\Arene1_levels.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Content\Arene1_levels.csv">
+    <None Include="Content\Maps\Arene1_events.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Content\PeterCity_events.csv">
+    <None Include="Content\Maps\PeterCity_levels.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Content\PeterCity_levels.csv">
+    <None Include="Content\Maps\PeterCity_events.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath)\MonoGame\v3.0\MonoGame.Content.Builder.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -4,5 +4,6 @@ Interact;Info2;15;11
 Interact;Info3;11;19
 Interact;Info4;19;31
 Interact;Info5;25;25
-ChangeStageNow;ToArena;16;19
+ChangeStageNow;Arene1;16;19
+StartPoint;Arene1;16;20
 StartPoint;StartGame;7;32
