@@ -93,7 +93,7 @@
             this.BtnWriteLevels.TabIndex = 7;
             this.BtnWriteLevels.Text = "Write Level";
             this.BtnWriteLevels.UseVisualStyleBackColor = true;
-            this.BtnWriteLevels.Click += new System.EventHandler(this.BtnWrite_Click);
+            this.BtnWriteLevels.Click += new System.EventHandler(this.BtnWriteLevel_Click);
             // 
             // BtnReset
             // 
@@ -131,7 +131,7 @@
             this.BtnSpecial.TabIndex = 12;
             this.BtnSpecial.Text = "Write Special";
             this.BtnSpecial.UseVisualStyleBackColor = true;
-            this.BtnSpecial.Click += new System.EventHandler(this.BtnSpecial_Click);
+            this.BtnSpecial.Click += new System.EventHandler(this.BtnWriteEvent_Click);
             // 
             // Form1
             // 

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Input;
+using GameDll;
 using Microsoft.VisualBasic;
 
 namespace Maparameter
@@ -16,16 +17,16 @@ namespace Maparameter
         Bitmap DrawArea;
         Graphics g;
 
-        List<Tuple<String, String, Point>> listSpecialBlock;
-        List<Tuple<int, Point>> listLevelBlock;
+        AreaLevelList listLevelBlock;
+        AreaEventList listEventBlock;
 
         string filePath;
 
         public Form1()
         {
             InitializeComponent();
-            listSpecialBlock = new List<Tuple<String, String, Point>>();
-            listLevelBlock = new List<Tuple<int, Point>>();
+            listEventBlock = new AreaEventList(GameVars.BLOCK);
+            listLevelBlock = new AreaLevelList(GameVars.BLOCK);
         }
 
         private void btnOpenPic_Click(object sender, EventArgs e)
@@ -43,14 +44,14 @@ namespace Maparameter
             }
         }
 
-        private void BtnWrite_Click(object sender, EventArgs e)
+        private void BtnWriteLevel_Click(object sender, EventArgs e)
         {
-            WriteLevels();
+            GameFuncs.WriteLevels(listLevelBlock, filePath.Substring(0, filePath.Length - filePath.Split('.').Last().Length - 1) + "_level.csv");
         }
 
-        private void BtnSpecial_Click(object sender, EventArgs e)
+        private void BtnWriteEvent_Click(object sender, EventArgs e)
         {
-            WriteSpecialBlock();
+            GameFuncs.WriteEvents(listEventBlock, filePath.Substring(0, filePath.Length - filePath.Split('.').Last().Length - 1) + "_event.csv");
         }
 
         private void PbPic_Click(object sender, EventArgs e)
@@ -71,8 +72,8 @@ namespace Maparameter
 
         private void BtnReset_Click(object sender, EventArgs e)
         {
-            listSpecialBlock = new List<Tuple<string, string, Point>>();
-            listLevelBlock = new List<Tuple<int, Point>>();
+            listEventBlock = new AreaEventList(GameVars.BLOCK);
+            listLevelBlock = new AreaLevelList(GameVars.BLOCK);
             DrawArea = new Bitmap(pic.Size.Width, pic.Size.Height);
             PbPic.Image = DrawArea;
         }
@@ -90,37 +91,30 @@ namespace Maparameter
             int blockSize = (int)NudBlockSize.Value;
             int xVal = (int)(me.Location.X / blockSize);
             int yVal = (int)(me.Location.Y / blockSize);
-            Point p = new Point(xVal, yVal);
-
-            Tuple<int, Point> z = GetLevelBlock(p);
             Pen mypen;
-            switch (z.Item1)
+            AreaLevel z = listLevelBlock.GetAreaLevel(xVal, yVal);
+            switch (z.ZPos)
             {
-                case 0:
-                    listLevelBlock.Remove(z);
-                    listLevelBlock.Add(new Tuple<int, Point>(1, p));
+                case GameEnums.AreaLevel_ZPos.GROUND:
+                    listLevelBlock.EditZPos(GameEnums.AreaLevel_ZPos.PLAYER, xVal, yVal);
                     mypen = new Pen(Color.Red, 2f);
                     break;
 
-                case 1:
-                    listLevelBlock.Remove(z);
-                    listLevelBlock.Add(new Tuple<int, Point>(2, p));
+                case GameEnums.AreaLevel_ZPos.PLAYER:
+                    listLevelBlock.EditZPos(GameEnums.AreaLevel_ZPos.SKY, xVal, yVal);
                     mypen = new Pen(Color.Yellow, 2f);
                     break;
 
-                case 2:
-                    listLevelBlock.Remove(z);
-                    listLevelBlock.Add(new Tuple<int, Point>(0, p));
+                case GameEnums.AreaLevel_ZPos.SKY:
+                    listLevelBlock.EditZPos(GameEnums.AreaLevel_ZPos.GROUND, xVal, yVal);
                     mypen = new Pen(Color.Black, 2f);
                     break;
 
-                case -1:
-                    listLevelBlock.Add(new Tuple<int, Point>(1, p));
+                case GameEnums.AreaLevel_ZPos.NONE:
+                default:
+                    listLevelBlock.EditZPos(GameEnums.AreaLevel_ZPos.PLAYER, xVal, yVal);
                     mypen = new Pen(Color.Red, 2f);
                     break;
-                    
-                default:
-                    return;
             }
             
             g = Graphics.FromImage(DrawArea);
@@ -129,31 +123,6 @@ namespace Maparameter
             g.Dispose();
         }
 
-        private Tuple<int, Point> GetLevelBlock(Point p)
-        {
-            Tuple<int, Point> t;
-            for (int c = 0; c <= 2; c++)
-            {
-                t = new Tuple<int, Point>(c, p);
-                if (listLevelBlock.Contains(t))
-                    return t;
-            }
-            return new Tuple<int, Point>(-1, p);
-        }
-
-        private void WriteLevels()
-        {
-            string picCsvLevels = filePath.Substring(0, filePath.Length - filePath.Split('.').Last().Length - 1) + "_levels.csv";
-            List<string> levelsData = new List<string>
-            {
-                "Level;X;Y",
-            };
-            foreach (Tuple<int, Point> t in listLevelBlock)
-            {
-                levelsData.Add(t.Item1.ToString() + ";" + t.Item2.X.ToString() + ";" + t.Item2.Y.ToString());
-            }
-            File.WriteAllLines(picCsvLevels, levelsData);
-        }
         #endregion  
 
         #region "BLOCK EVENT"
@@ -166,19 +135,15 @@ namespace Maparameter
 
             FrmPlaceSpecialBlock frmPlaceSpecialBlock = new FrmPlaceSpecialBlock(xVal, yVal);
             frmPlaceSpecialBlock.ShowDialog();
-            Tuple<String, String, Point> res = new Tuple<String, String, Point>(frmPlaceSpecialBlock.res.Item1, frmPlaceSpecialBlock.res.Item2, new Point(xVal, yVal));
+            AreaEvent res = frmPlaceSpecialBlock.res;
 
-            if (res.Item1 == "" | res.Item2 == "")
+            if (res.AType == GameEnums.AreaEvent_Type.NONE)
                 return;
 
-            Tuple<String, String, Point> oldOne = GetSpecialBlockInfo(xVal, yVal);
-            if (oldOne.Item1 != "")
-            {
-                if (MessageBox.Show("Le block est déjà défini, voulez-vous l'écraser ?", "block déjà défini") == DialogResult.Yes)
-                    listSpecialBlock.Remove(oldOne);
-            }
-
-            listSpecialBlock.Add(res);
+            List<AreaEvent> oldOnes = listEventBlock.GetAreaEvent(res.AType, GameEnums.Direction.NONE, "", res.XVal, res.YVal);
+            if (oldOnes.Count() > 0)
+                listEventBlock.eventsSource.Remove(oldOnes.First());
+            listEventBlock.eventsSource.Add(res);
 
             Pen mypen = new Pen(Color.Orange, 2f);
             g = Graphics.FromImage(DrawArea);
@@ -188,31 +153,6 @@ namespace Maparameter
             g.Dispose();
         }
 
-        private Tuple<string, string, Point> GetSpecialBlockInfo(int xVal, int yVal)
-        {
-            Point p = new Point(xVal, yVal);
-            foreach (Tuple<string, string, Point> t in listSpecialBlock)
-            {
-                if (t.Item3 == p)
-                    return t;
-            }
-            return new Tuple<string, string, Point>("", "", p);
-        }
-
-        private void WriteSpecialBlock()
-        {
-            string picCsvSpecial = filePath.Substring(0, filePath.Length - filePath.Split('.').Last().Length - 1) + "_events.csv";
-            List<string> specialData = new List<string>
-            {
-                "Type;Name;X;Y",
-            };
-            foreach (Tuple<String, String, Point> t in listSpecialBlock)
-            {
-                specialData.Add(t.Item1 + ";" + t.Item2 + ";" + t.Item3.X.ToString() + ";" + t.Item3.Y.ToString());
-            }
-            File.WriteAllLines(picCsvSpecial, specialData);
-
-        }
 
         #endregion
 

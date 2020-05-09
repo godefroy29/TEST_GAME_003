@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using GameDll;
+using System;
 using System.Windows.Forms;
 
 namespace Maparameter
 {
     public partial class FrmPlaceSpecialBlock : Form
     {
-        public Tuple<String, String> res = new Tuple<String, String>("", "");
+        public AreaEvent res = new AreaEvent();
         private int x, y;
+
+        
 
         public FrmPlaceSpecialBlock(int x, int y)
         {
@@ -24,14 +20,27 @@ namespace Maparameter
 
         private void BtnCancel_Click(object sender, EventArgs e)
         {
-            res = new Tuple<String, String>("","");
+            res = new AreaEvent();
             Close();
+        }
+
+        private void FrmPlaceSpecialBlock_Load(object sender, EventArgs e)
+        {
+
         }
 
         private void BtnOK_Click(object sender, EventArgs e)
         {
-            res = new Tuple<String,String>(cboType.SelectedItem.ToString(),txtName.Text.Trim(' '));
-            Close();
+            try
+            {
+                res = new AreaEvent(cboType.SelectedItem.ToString().ToUpper(), CboDir.SelectedItem.ToString().ToUpper(), txtName.Text.Trim(' '), x, y);
+                Close();
+            }
+            catch (Exception)
+            {
+                
+            }
+            
         }
     }
 }
